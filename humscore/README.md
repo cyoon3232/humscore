@@ -1,3 +1,10 @@
+# HumScore
+
+## What it can do
+- When you sing or hum a note, it detects the pitch.
+- Then it shows the pitch and writes it down on a score.
+- It also makes it with a rhythm.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
