@@ -42,11 +42,11 @@ const NOTE_NAMES = [
   "B"
 ]
 
-const MIN_CLARITY = 0.5
+const MIN_CLARITY = 0.6
 const MIN_FREQUENCY = 50
 const MAX_FREQUENCY = 1000
-const MIN_STABLE_TIME_MS = 180
-const MIN_NOTE_DURATION_SECONDS = 0.12;
+const MIN_STABLE_TIME_MS = 90
+const MIN_NOTE_DURATION_SECONDS = 0.09;
 const SILENCE_RMS_THRESHOLD = 0.01
 
 function frequencyToNote(frequency: number) {
@@ -61,6 +61,36 @@ function frequencyToNote(frequency: number) {
     note: `${noteName}${octave}`,
     cents,
   }
+
+  // frequency 440 Hz returns { note: "A4", cents: 0}
+  /**
+   * Every octave doubles the frequency
+   * A3 = 220 Hz
+   * A4 = 440 Hz
+   * A5 = 80 Hz
+   * -> Need log_2
+   * 
+   * MIDI Note
+   * A4 = MIDI note 69
+   * A5 = MIDI note 81
+   * * Each semitone is one MIDI note
+   * * 12 MIDI notes = 1 Octave
+   * -> from A4: Math.round(69 + 12 * Math.log2(frequency / 440))
+   * 
+   * Note Name
+   * NOTE_NAMES[ ((midiNumber % 12) + 12) % 12 ]
+   * 69 % 12 = 9
+   * Index 9 of NOTE_NAMES array: "A"
+   * (() + 12) % 12 is in case of negative remainder and out of bounds error
+   * 
+   * Octave
+   * Since MIDI number rises by 12 each octave,
+   * Divide that MIDI number by 12 and always get its "floor"
+   * ie. 5.75 -> 5
+   * Octave in human terms is 1 lower than that
+   * -> Math.floor(midiNumber / 12) - 1
+   * 
+   */
 }
 
 function getRms(input: Float32Array) {
@@ -95,10 +125,10 @@ function App() {
 
   async function startListening() {
     try {
-      setError(" ");
+      setError(" ")
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
+        audio: true
       })
 
       const audioContext = new AudioContext();
