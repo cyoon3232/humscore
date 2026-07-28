@@ -496,6 +496,7 @@ function App() {
     if (!isRecordingRef.current) return
 
     isRecordingRef.current = false
+    setIsRecording(false)
 
     if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.stop()
