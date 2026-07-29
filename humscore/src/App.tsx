@@ -301,6 +301,7 @@ function App() {
 
   const calibrationPointsRef = useRef<CalibrationPoint[]>([])
 
+  const isCalibratingRef = useRef(false)
   const calibrationSamplesRef = useRef<number[]>([])
   const calibrationTimeoutRef = useRef<number | null>(null)
 
@@ -369,6 +370,7 @@ function App() {
 
     setIsListening(false)
     setIsCalibrating(false)
+    isCalibratingRef.current = false
     setLivePitch(null)
   }
 
@@ -380,7 +382,10 @@ function App() {
 
     setError("")
     setPendingCalibration(null)
+
     setIsCalibrating(true)
+    isCalibratingRef.current = true
+
     calibrationSamplesRef.current = []
 
     calibrationTimeoutRef.current = window.setTimeout(() => {
@@ -392,6 +397,7 @@ function App() {
     const samples = calibrationSamplesRef.current
 
     setIsCalibrating(false)
+    isCalibratingRef.current = false
 
     if (samples.length < 5) {
       setError("I could not hear a clear calibration note. Try humming louder and steadier.")
@@ -617,7 +623,7 @@ function App() {
         volume,
       })
 
-      if (isCalibrating) {
+      if (isCalibratingRef.current) {
         calibrationSamplesRef.current.push(pitch)
       }
 
