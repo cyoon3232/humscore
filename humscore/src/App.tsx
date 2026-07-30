@@ -288,6 +288,8 @@ function App() {
   const [livePitch, setLivePitch] = useState<LivePitch | null>(null)
   const [calibrationPoints, setCalibrationPoints] = useState<CalibrationPoint[]>([])
   const [pendingCalibration, setPendingCalibration] = useState<PendingCalibration | null>(null)
+
+  const [selectedBlockId, setSelectedBlockId] = useState<number | null>(null)
   
   const [noteBlocks, setNoteBlocks] = useState<NoteBlock[]>([])
   const [audioUrl, setAudioUrl] = useState("")
