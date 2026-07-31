@@ -81,6 +81,10 @@ const MIN_UNCERTAIN_DURATION = 0.05
 const MIN_STRONG_DURATION = 0.18
 const MAX_GAP_BETWEEN_FRAMES = 0.14
 
+const GRID_ROW_HEIGHT = 34
+const GRID_NOTE_PADDING = 4
+const MIN_TIMELINE_SECONDS = 1
+
 
 // frequency 440 Hz returns { note: "A4", cents: 0}
 /**
@@ -280,6 +284,26 @@ function processPitchFrames(frames: PitchFrame[]) {
   return blocks;
 }
 
+function getTimelineRows(blocks: NoteBlock[]) {
+  if (blocks.length === 0) return []
+
+  const midiValues = blocks.map((block) => block.midi)
+
+  const lowestMidi = Math.max(Math.min(...midiValues) - 2, 0)
+  const highestMidi = Math.min(Math.max(...midiValues) + 2, 127)
+
+  const rows = []
+
+  for (let midi = highestMidi; midi >= lowestMidi; midi--) {
+    rows.push({
+      midi,
+      note: midiToNote(midi),
+    })
+  }
+
+  return rows
+}
+
 function App() {
   const [isListening, setIsListening] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
@@ -318,8 +342,12 @@ function App() {
 
   const timelineDuration = Math.max(
     ...noteBlocks.map((block) => block.end),
-    1
+    MIN_TIMELINE_SECONDS
   )
+
+  const timelineRows = getTimelineRows(noteBlocks)
+  const highestTimelineMidi = timelineRows.length > 0 ? timelineRows[0].midi : 0
+  const timelineHeight = timelineRows.length * GRID_ROW_HEIGHT
 
   async function startListening() {
     try {
@@ -782,29 +810,51 @@ function App() {
           {noteBlocks.length === 0 ? (
             <p className='empty-message'>No notes recorded yet.</p>
           ) : (
-            <div className='timeline'>
-              {noteBlocks.map((block) => {
-                const left = (block.start / timelineDuration) * 100;
-                const width = Math.max(
-                  (block.duration / timelineDuration) * 100,
-                  3
-                );
+            <div className='piano-roll'>
+              <div className='pitch-labels' style={{ height: `${timelineHeight}px` }}>
+                {timelineRows.map((row) => (
+                  <div className='pitch-label' key={row.midi}>
+                    {row.note}
+                  </div>
+                ))}
+              </div>
 
-                return (
-                  <button
-                    key={block.id}
-                    className={`timeline-block ${block.confidence}`}
+              <div className='timeline-grid' style={{ height: `${timelineHeight}px` }}>
+                {timelineRows.map((row) => (
+                  <div
+                    className='pitch-row'
+                    key={row.midi}
                     style={{
-                      left: `${left}%`,
-                      width: `${width}%`,
+                      top: `${(highestTimelineMidi - row.midi) * GRID_ROW_HEIGHT}px`,
                     }}
-                    onClick={() => playSingleGeneratedNote(block)}
-                    title={`${block.note} | ${block.duration.toFixed(2)}s | ${block.confidence}`}
-                  >
-                    {block.note}
-                  </button>
-                );
-              })}
+                  />
+                ))}
+
+                {noteBlocks.map((block) => {
+                  const left = (block.start / timelineDuration) * 100
+                  const width = Math.max((block.duration / timelineDuration) * 100, 2)
+
+                  const rowIndex = highestTimelineMidi - block.midi
+                  const top = rowIndex * GRID_ROW_HEIGHT + GRID_NOTE_PADDING
+
+                  return (
+                    <button
+                      key={block.id}
+                      className={`timeline-block ${block.confidence}`}
+                      style={{
+                        left: `${left}%`,
+                        width: `${width}%`,
+                        top: `${top}px`,
+                        height: `${GRID_ROW_HEIGHT - GRID_NOTE_PADDING * 2}px`,
+                      }}
+                      onClick={() => playSingleGeneratedNote(block)}
+                      title={`${block.note} | ${block.duration.toFixed(2)}s | ${block.confidence}`}
+                    >
+                      {block.note}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )}
         </section>
