@@ -84,6 +84,8 @@ const MAX_GAP_BETWEEN_FRAMES = 0.14
 const GRID_ROW_HEIGHT = 34
 const GRID_NOTE_PADDING = 4
 const MIN_TIMELINE_SECONDS = 1
+const PIXELS_PER_SECOND = 140
+const MIN_TIMELINE_WIDTH = 900
 
 
 // frequency 440 Hz returns { note: "A4", cents: 0}
@@ -348,6 +350,10 @@ function App() {
   const timelineRows = getTimelineRows(noteBlocks)
   const highestTimelineMidi = timelineRows.length > 0 ? timelineRows[0].midi : 0
   const timelineHeight = timelineRows.length * GRID_ROW_HEIGHT
+  const timelineWidth = Math.max(
+    timelineDuration * PIXELS_PER_SECOND,
+    MIN_TIMELINE_WIDTH
+  )
 
   async function startListening() {
     try {
@@ -819,41 +825,44 @@ function App() {
                 ))}
               </div>
 
-              <div className='timeline-grid' style={{ height: `${timelineHeight}px` }}>
-                {timelineRows.map((row) => (
-                  <div
-                    className='pitch-row'
-                    key={row.midi}
-                    style={{
-                      top: `${(highestTimelineMidi - row.midi) * GRID_ROW_HEIGHT}px`,
-                    }}
-                  />
-                ))}
-
-                {noteBlocks.map((block) => {
-                  const left = (block.start / timelineDuration) * 100
-                  const width = Math.max((block.duration / timelineDuration) * 100, 2)
-
-                  const rowIndex = highestTimelineMidi - block.midi
-                  const top = rowIndex * GRID_ROW_HEIGHT + GRID_NOTE_PADDING
-
-                  return (
-                    <button
-                      key={block.id}
-                      className={`timeline-block ${block.confidence}`}
+              <div className='timeline-scroll'>
+                <div className='timeline-grid' 
+                style={{ width: `${timelineWidth}px`, height: `${timelineHeight}px` }}>
+                  {timelineRows.map((row) => (
+                    <div
+                      className='pitch-row'
+                      key={row.midi}
                       style={{
-                        left: `${left}%`,
-                        width: `${width}%`,
-                        top: `${top}px`,
-                        height: `${GRID_ROW_HEIGHT - GRID_NOTE_PADDING * 2}px`,
+                        top: `${(highestTimelineMidi - row.midi) * GRID_ROW_HEIGHT}px`,
                       }}
-                      onClick={() => playSingleGeneratedNote(block)}
-                      title={`${block.note} | ${block.duration.toFixed(2)}s | ${block.confidence}`}
-                    >
-                      {block.note}
-                    </button>
-                  )
-                })}
+                    />
+                  ))}
+
+                  {noteBlocks.map((block) => {
+                    const left = block.start * PIXELS_PER_SECOND
+                    const width = Math.max(block.duration * PIXELS_PER_SECOND, 18)
+
+                    const rowIndex = highestTimelineMidi - block.midi
+                    const top = rowIndex * GRID_ROW_HEIGHT + GRID_NOTE_PADDING
+
+                    return (
+                      <button
+                        key={block.id}
+                        className={`timeline-block ${block.confidence}`}
+                        style={{
+                          left: `${left}%`,
+                          width: `${width}%`,
+                          top: `${top}px`,
+                          height: `${GRID_ROW_HEIGHT - GRID_NOTE_PADDING * 2}px`,
+                        }}
+                        onClick={() => playSingleGeneratedNote(block)}
+                        title={`${block.note} | ${block.duration.toFixed(2)}s | ${block.confidence}`}
+                      >
+                        {block.note}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           )}
