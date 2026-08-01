@@ -9,7 +9,7 @@
 }
 
 .card {
-  width: 420px;
+  width: min(1200px, 100%);
   padding: 32px;
   border-radius: 20px;
   background: white;
@@ -154,9 +154,19 @@ button:disabled {
   margin-top: 16px;
 }
 
+/* 
+==========================
+Timeline CSS 
+==========================
+*/
+
+.editor-panel {
+  overflow: hidden;
+}
+
 .piano-roll {
   display: grid;
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: 76px 1fr;
   margin-top: 16px;
   border: 1px solid #e5e5e5;
   border-radius: 14px;
@@ -179,9 +189,13 @@ button:disabled {
   border-bottom: 1px solid #e1e1e1;
 }
 
+.timeline-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 .timeline-grid {
   position: relative;
-  overflow: hidden;
   background: white;
 }
 
