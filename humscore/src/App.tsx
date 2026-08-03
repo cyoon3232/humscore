@@ -2,309 +2,35 @@ import { useRef, useState } from 'react'
 import { PitchDetector } from 'pitchy'
 import './App.css'
 
-type LivePitch = {
-  frequency: number,
-  note: string,
-  rawNote: string,
-  cents: number,
-  clarity: number,
-  volume: number
-}
+import type {
+  LivePitch,
+  PitchFrame,
+  NoteBlock,
+  CalibrationChoice,
+  CalibrationPoint,
+  PendingCalibration,
+} from "./types"
 
-type PitchFrame = {
-  time: number,
-  frequency: number,
-  rawNote: string,
-  correctedNote: string,
-  correctedMidi: number,
-  cents: number,
-  clarity: number,
-  volume: number
-}
+import {
+  frequencyToNoteInfo,
+  getMedian,
+  getRms,
+  midiToFrequency,
+  midiToNote,
+} from "./music/noteUtils"
 
-type NoteBlock = {
-  id: number,
-  note: string,
-  midi: number,
-  start: number,
-  end: number,
-  duration: number,
-  confidence: "strong" | "uncertain",
-  averageClarity: number,
-  averageVolume: number
-}
+import { applyCalibrationToFrequency } from "./music/calibration"
+import { processPitchFrames } from "./music/pitchProcessing"
+import { scheduleGeneratedNote } from "./music/playback"
 
-type CalibrationPoint = {
-  id: number,
-  selectedNote: string,
-  selectedMidi: number,
-  detectedFrequency: number,
-  offsetCents: number,
-}
-
-type CalibrationChoice = {
-  note: string,
-  midi: number
-}
-
-type PendingCalibration = {
-  detectedFrequency: number,
-  detectedNote: string,
-  choices: CalibrationChoice[]
-}
-
-const NOTE_NAMES = [
-  "C",
-  "C#/Db",
-  "D",
-  "D#/Eb",
-  "E",
-  "F",
-  "F#/Gb",
-  "G",
-  "G#/Ab",
-  "A",
-  "A#/Bb",
-  "B"
-]
+import PianoRoll from './components/PianoRoll'
 
 const MIN_FREQUENCY = 50
 const MAX_FREQUENCY = 1000
-
 const MIN_RECORDING_CLARITY = 0.55
 const MIN_RECORDING_VOLUME = 0.006
 
-const GOOD_CLARITY = 0.75
-const GOOD_VOLUME = 0.012
 
-const MIN_UNCERTAIN_DURATION = 0.05
-const MIN_STRONG_DURATION = 0.18
-const MAX_GAP_BETWEEN_FRAMES = 0.14
-
-const GRID_ROW_HEIGHT = 34
-const GRID_NOTE_PADDING = 4
-const MIN_TIMELINE_SECONDS = 1
-const PIXELS_PER_SECOND = 140
-const MIN_TIMELINE_WIDTH = 900
-
-
-// frequency 440 Hz returns { note: "A4", cents: 0}
-/**
- * Every octave doubles the frequency
- * A3 = 220 Hz
- * A4 = 440 Hz
- * A5 = 80 Hz
- * -> Need log_2
- * 
- * MIDI Note
- * A4 = MIDI note 69
- * A5 = MIDI note 81
- * * Each semitone is one MIDI note
- * * 12 MIDI notes = 1 Octave
- * -> from A4: Math.round(69 + 12 * Math.log2(frequency / 440))
- * 
- * Note Name
- * NOTE_NAMES[ ((midiNumber % 12) + 12) % 12 ]
- * 69 % 12 = 9
- * Index 9 of NOTE_NAMES array: "A"
- * (() + 12) % 12 is in case of negative remainder and out of bounds error
- * 
- * Octave
- * Since MIDI number rises by 12 each octave,
- * Divide that MIDI number by 12 and always get its "floor"
- * ie. 5.75 -> 5
- * Octave in human terms is 1 lower than that
- * -> Math.floor(midiNumber / 12) - 1
- * 
- */
-function midiToFrequency(midi: number) {
-  return 440 * Math.pow(2, (midi - 69) / 12)
-}
-
-function frequencyToMidiFloat(frequency: number) {
-  return 69 + 12 * Math.log2(frequency / 440)
-}
-
-function midiToNote(midi: number) {
-  const noteName = NOTE_NAMES[((midi % 12) + 12) % 12]
-  const octave = Math.floor(midi / 12) - 1
-  return `${noteName}${octave}`
-}
-
-function frequencyToNoteInfo(frequency: number) {
-  const midiFloat = frequencyToMidiFloat(frequency)
-  const midi = Math.round(midiFloat)
-  const note = midiToNote(midi)
-  const exactFrequency = midiToFrequency(midi)
-  const cents = Math.round(1200 * Math.log2(frequency / exactFrequency))
-
-  return {
-    note,
-    midi,
-    cents,
-  }
-}
-
-function getRms(input: Float32Array) {
-  let sum = 0
-
-  for (const sample of input) {
-    sum += sample * sample
-  }
-
-  return Math.sqrt(sum / input.length)
-}
-
-function getMedian(numbers: number[]) {
-  if (numbers.length === 0) return 0;
-
-  const sorted = [...numbers].sort((a, b) => a - b)
-  const middle = Math.floor(sorted.length / 2)
-
-  if (sorted.length % 2 === 0) {
-    return (sorted[middle - 1] + sorted[middle]) / 2
-  }
-
-  return sorted[middle]
-}
-
-function getCalibrationOffsetForMidi(
-  midi: number,
-  calibrationPoints: CalibrationPoint[]
-) {
-  if (calibrationPoints.length === 0) return 0
-
-  const sortedPoints = [...calibrationPoints].sort(
-    (a, b) => a.selectedMidi - b.selectedMidi
-  )
-
-  if (sortedPoints.length === 1) {
-    return sortedPoints[0].offsetCents
-  }
-
-  if (midi <= sortedPoints[0].selectedMidi) {
-    return sortedPoints[0].offsetCents
-  }
-
-  const lastPoint = sortedPoints[sortedPoints.length - 1]
-
-  if (midi >= lastPoint.selectedMidi) {
-    return lastPoint.offsetCents
-  }
-
-  for (let i = 0; i < sortedPoints.length - 1; i++) {
-    const left = sortedPoints[i]
-    const right = sortedPoints[i + 1]
-
-    if (midi >= left.selectedMidi && midi <= right.selectedMidi) {
-      const progress =
-        (midi - left.selectedMidi) / (right.selectedMidi - left.selectedMidi)
-
-      return left.offsetCents + progress * (right.offsetCents - left.offsetCents)
-    }
-  }
-
-  return 0;
-}
-
-function applyCalibrationToFrequency(
-  frequency: number,
-  calibrationPoints: CalibrationPoint[]
-) {
-  const rawMidi = frequencyToMidiFloat(frequency)
-  const estimatedOffsetCents = getCalibrationOffsetForMidi(
-    rawMidi,
-    calibrationPoints
-  )
-
-  return frequency / Math.pow(2, estimatedOffsetCents / 1200)
-}
-
-function processPitchFrames(frames: PitchFrame[]) {
-  const blocks: NoteBlock[] = []
-
-  if (frames.length === 0) return blocks
-
-  let currentGroup: PitchFrame[] = [frames[0]]
-
-  function finishGroup(group: PitchFrame[]) {
-    if (group.length === 0) return
-
-    const first = group[0]
-    const last = group[group.length - 1]
-
-    const start = first.time
-    const duration = Math.max(last.time - first.time, 0.05)
-    const end = start + duration
-
-    const averageClarity =
-      group.reduce((sum, frame) => sum + frame.clarity, 0) / group.length
-
-    const averageVolume =
-      group.reduce((sum, frame) => sum + frame.volume, 0) / group.length
-
-    if (duration < MIN_UNCERTAIN_DURATION) return
-
-    const confidence =
-      duration >= MIN_STRONG_DURATION &&
-      averageClarity >= GOOD_CLARITY &&
-      averageVolume >= GOOD_VOLUME
-        ? "strong"
-        : "uncertain"
-
-    blocks.push({
-      id: Date.now() + Math.random(),
-      note: first.correctedNote,
-      midi: first.correctedMidi,
-      start,
-      end,
-      duration,
-      confidence,
-      averageClarity,
-      averageVolume
-    })
-  }
-
-  for (let i = 1; i < frames.length; i++) {
-    const previousFrame = frames[i - 1]
-    const currentFrame = frames[i]
-
-    const sameNote = currentFrame.correctedNote === previousFrame.correctedNote
-    const smallGap =
-      currentFrame.time - previousFrame.time <= MAX_GAP_BETWEEN_FRAMES
-
-    if (sameNote && smallGap) {
-      currentGroup.push(currentFrame)
-    } else {
-      finishGroup(currentGroup)
-      currentGroup = [currentFrame]
-    }
-  }
-
-  finishGroup(currentGroup)
-
-  return blocks;
-}
-
-function getTimelineRows(blocks: NoteBlock[]) {
-  if (blocks.length === 0) return []
-
-  const midiValues = blocks.map((block) => block.midi)
-
-  const lowestMidi = Math.max(Math.min(...midiValues) - 2, 0)
-  const highestMidi = Math.min(Math.max(...midiValues) + 2, 127)
-
-  const rows = []
-
-  for (let midi = highestMidi; midi >= lowestMidi; midi--) {
-    rows.push({
-      midi,
-      note: midiToNote(midi),
-    })
-  }
-
-  return rows
-}
 
 function App() {
   const [isListening, setIsListening] = useState(false)
@@ -341,19 +67,6 @@ function App() {
   const audioChunksRef = useRef<Blob[]>([])
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null)
   const playbackContextRef = useRef<AudioContext | null>(null)
-
-  const timelineDuration = Math.max(
-    ...noteBlocks.map((block) => block.end),
-    MIN_TIMELINE_SECONDS
-  )
-
-  const timelineRows = getTimelineRows(noteBlocks)
-  const highestTimelineMidi = timelineRows.length > 0 ? timelineRows[0].midi : 0
-  const timelineHeight = timelineRows.length * GRID_ROW_HEIGHT
-  const timelineWidth = Math.max(
-    timelineDuration * PIXELS_PER_SECOND,
-    MIN_TIMELINE_WIDTH
-  )
 
   async function startListening() {
     try {
@@ -596,31 +309,6 @@ function App() {
     return playbackContextRef.current
   }
 
-  function scheduleGeneratedNote(
-    context: AudioContext,
-    midi: number,
-    startTime: number,
-    duration: number,
-    volume: number
-  ) {
-    const oscillator = context.createOscillator()
-    const gain = context.createGain()
-
-    oscillator.type = "triangle"
-    oscillator.frequency.setValueAtTime(midiToFrequency(midi), startTime)
-
-    gain.gain.setValueAtTime(0, startTime)
-    gain.gain.linearRampToValueAtTime(volume, startTime + 0.01)
-    gain.gain.setValueAtTime(volume, startTime + Math.max(duration - 0.03, 0.02))
-    gain.gain.linearRampToValueAtTime(0, startTime + duration)
-
-    oscillator.connect(gain)
-    gain.connect(context.destination)
-
-    oscillator.start(startTime)
-    oscillator.stop(startTime + duration + 0.05)
-  }
-
   function detectPitch() {
     const audioContext = audioContextRef.current
     const analyser = analyserRef.current
@@ -813,59 +501,8 @@ function App() {
             </p>
           </div>
 
-          {noteBlocks.length === 0 ? (
-            <p className='empty-message'>No notes recorded yet.</p>
-          ) : (
-            <div className='piano-roll'>
-              <div className='pitch-labels' style={{ height: `${timelineHeight}px` }}>
-                {timelineRows.map((row) => (
-                  <div className='pitch-label' key={row.midi}>
-                    {row.note}
-                  </div>
-                ))}
-              </div>
-
-              <div className='timeline-scroll'>
-                <div className='timeline-grid' 
-                style={{ width: `${timelineWidth}px`, height: `${timelineHeight}px` }}>
-                  {timelineRows.map((row) => (
-                    <div
-                      className='pitch-row'
-                      key={row.midi}
-                      style={{
-                        top: `${(highestTimelineMidi - row.midi) * GRID_ROW_HEIGHT}px`,
-                      }}
-                    />
-                  ))}
-
-                  {noteBlocks.map((block) => {
-                    const left = block.start * PIXELS_PER_SECOND
-                    const width = Math.max(block.duration * PIXELS_PER_SECOND, 18)
-
-                    const rowIndex = highestTimelineMidi - block.midi
-                    const top = rowIndex * GRID_ROW_HEIGHT + GRID_NOTE_PADDING
-
-                    return (
-                      <button
-                        key={block.id}
-                        className={`timeline-block ${block.confidence}`}
-                        style={{
-                          left: `${left}%`,
-                          width: `${width}%`,
-                          top: `${top}px`,
-                          height: `${GRID_ROW_HEIGHT - GRID_NOTE_PADDING * 2}px`,
-                        }}
-                        onClick={() => playSingleGeneratedNote(block)}
-                        title={`${block.note} | ${block.duration.toFixed(2)}s | ${block.confidence}`}
-                      >
-                        {block.note}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
+          <PianoRoll noteBlocks={noteBlocks} onPlayNote={playSingleGeneratedNote} />
+        
         </section>
 
         {error && <p className='error'>{error}</p>}
