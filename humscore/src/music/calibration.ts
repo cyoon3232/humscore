@@ -1,7 +1,7 @@
 import type { CalibrationPoint } from "../types"
 import { frequencyToMidiFloat } from "./noteUtils"
 
-function getCalibrationOffsetForMidi(
+export function getCalibrationOffsetForMidi(
   midi: number,
   calibrationPoints: CalibrationPoint[]
 ) {
