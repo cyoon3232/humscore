@@ -9,6 +9,7 @@ import type {
   CalibrationChoice,
   CalibrationPoint,
   PendingCalibration,
+  CalibrationDebug
 } from "./types"
 
 import {
@@ -30,7 +31,23 @@ const MAX_FREQUENCY = 1000
 const MIN_RECORDING_CLARITY = 0.55
 const MIN_RECORDING_VOLUME = 0.006
 
+const MIN_CALIBRATION_CLARITY = 0.3
+const MIN_CALIBRATION_VOLUME = 0.0025
+const MIN_CALIBRATION_SAMPLES = 3
+const CALIBRATION_CAPTURE_MS = 1800
 
+function createEmptyCalibrationDebug(): CalibrationDebug {
+  return {
+    framesSeen: 0,
+    acceptedSamples: 0,
+    rejectedLowClarity: 0,
+    rejectedLowVolume: 0,
+    rejectedOutOfRange: 0,
+    lastPitch: null,
+    lastClarity: null,
+    lastVolume: null,
+  }
+}
 
 function App() {
   const [isListening, setIsListening] = useState(false)
@@ -47,6 +64,10 @@ function App() {
   const [audioUrl, setAudioUrl] = useState("")
   const [error, setError] = useState(" ")
 
+  const [calibrationDebug, setCalibrationDebug] = useState<CalibrationDebug>(
+    createEmptyCalibrationDebug()
+  )
+
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -57,6 +78,9 @@ function App() {
 
   const isCalibratingRef = useRef(false)
   const calibrationSamplesRef = useRef<number[]>([])
+  const calibrationDebugRef = useRef<CalibrationDebug>(
+    createEmptyCalibrationDebug()
+  )
   const calibrationTimeoutRef = useRef<number | null>(null)
 
   const isRecordingRef = useRef(false)
@@ -137,9 +161,13 @@ function App() {
 
     calibrationSamplesRef.current = []
 
+    const emptyDebug = createEmptyCalibrationDebug()
+    calibrationDebugRef.current = emptyDebug
+    setCalibrationDebug(emptyDebug)
+
     calibrationTimeoutRef.current = window.setTimeout(() => {
       finishCalibrationCapture()
-    }, 1300)
+    }, CALIBRATION_CAPTURE_MS)
   }
 
   function finishCalibrationCapture() {
@@ -147,9 +175,13 @@ function App() {
 
     setIsCalibrating(false)
     isCalibratingRef.current = false
+    setCalibrationDebug({ ...calibrationDebugRef.current })
 
-    if (samples.length < 5) {
-      setError("I could not hear a clear calibration note. Try humming louder and steadier.")
+    if (samples.length < MIN_CALIBRATION_SAMPLES) {
+      setError(
+        `Calibration failed. Accepted ${samples.length} samples. ` +
+        `Try again but check the debug numbers below.`
+      )
       return
     }
 
@@ -322,6 +354,33 @@ function App() {
     const volume = getRms(input)
     const [pitch, clarity] = detector.findPitch(input, audioContext.sampleRate)
 
+    if (isCalibratingRef.current) {
+      const debug = calibrationDebugRef.current
+
+      debug.framesSeen += 1
+      debug.lastPitch = Number.isFinite(pitch) ? pitch : null
+      debug.lastClarity = clarity
+      debug.lastVolume = volume
+
+      const pitchInRange = pitch >= MIN_FREQUENCY && pitch <= MAX_FREQUENCY
+      const clearEnoughForCalibration = clarity >= MIN_CALIBRATION_CLARITY
+      const loudEnoughForCalibration = volume >= MIN_CALIBRATION_VOLUME
+
+      if (!pitchInRange) {
+        debug.rejectedOutOfRange += 1
+      } else if (!clearEnoughForCalibration) {
+        debug.rejectedLowClarity += 1
+      } else if (!loudEnoughForCalibration) {
+        debug.rejectedLowVolume += 1
+      } else {
+        calibrationSamplesRef.current.push(pitch)
+        debug.acceptedSamples = calibrationSamplesRef.current.length
+      }
+
+      calibrationDebugRef.current = debug
+      setCalibrationDebug({ ...debug })
+    }
+
     const reliableEnough =
       clarity >= MIN_RECORDING_CLARITY &&
       volume >= MIN_RECORDING_VOLUME &&
@@ -346,10 +405,6 @@ function App() {
         clarity,
         volume,
       })
-
-      if (isCalibratingRef.current) {
-        calibrationSamplesRef.current.push(pitch)
-      }
 
       if (isRecordingRef.current) {
         const now = performance.now() / 1000
@@ -463,6 +518,32 @@ function App() {
               ))}
             </div>
           )}
+
+          <div className="debug-box">
+            <p>
+              Calibration debug: accepted {calibrationDebug.acceptedSamples} /{" "}
+              {calibrationDebug.framesSeen} frames
+            </p>
+            <p>
+              low clarity: {calibrationDebug.rejectedLowClarity} | low volume:{" "}
+              {calibrationDebug.rejectedLowVolume} | out of range:{" "}
+              {calibrationDebug.rejectedOutOfRange}
+            </p>
+            <p>
+              last pitch:{" "}
+              {calibrationDebug.lastPitch
+                ? `${calibrationDebug.lastPitch.toFixed(1)} Hz`
+                : "--"}{" "}
+              | clarity:{" "}
+              {calibrationDebug.lastClarity
+                ? calibrationDebug.lastClarity.toFixed(2)
+                : "--"}{" "}
+              | volume:{" "}
+              {calibrationDebug.lastVolume
+                ? calibrationDebug.lastVolume.toFixed(4)
+                : "--"}
+            </p>
+          </div>
         </section>
 
         <section className='panel'>

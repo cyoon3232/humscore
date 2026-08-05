@@ -49,3 +49,14 @@ export type PendingCalibration = {
     choices: CalibrationChoice[]
 }
 
+// displays how calibration failed
+export type CalibrationDebug = {
+    framesSeen: number,
+    acceptedSamples: number,
+    rejectedLowClarity: number,
+    rejectedLowVolume: number,
+    rejectedOutOfRange: number,
+    lastPitch: number | null,
+    lastClarity: number | null,
+    lastVolume: number | null
+}

@@ -148,6 +148,19 @@ button:disabled {
   background: white;
 }
 
+.debug-box {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: white;
+  color: #555;
+  font-size: 13px;
+}
+
+.debug-box p {
+  margin: 4px 0;
+}
+
 .audio {
   display: block;
   width: 100%;
