@@ -1,5 +1,6 @@
 import type { NoteBlock } from "../types"
 import { midiToNote } from "../music/noteUtils"
+import { getBeatMarkers } from "../music/rhythm"
 
 const GRID_ROW_HEIGHT = 34
 const GRID_NOTE_PADDING = 4
@@ -9,6 +10,8 @@ const MIN_TIMELINE_WIDTH = 900
 
 type PianoRollProps = {
   noteBlocks: NoteBlock[]
+  tempoBpm: number
+  beatsPerBar: number
   onPlayNote: (block: NoteBlock) => void
 }
 
@@ -32,7 +35,12 @@ function getTimelineRows(blocks: NoteBlock[]) {
   return rows
 }
 
-function PianoRoll({ noteBlocks, onPlayNote }: PianoRollProps) {
+function PianoRoll({ 
+  noteBlocks,
+  tempoBpm,
+  beatsPerBar,
+  onPlayNote
+}: PianoRollProps) {
     const timelineDuration = Math.max(
         ...noteBlocks.map((block) => block.end),
         MIN_TIMELINE_SECONDS
@@ -45,61 +53,77 @@ function PianoRoll({ noteBlocks, onPlayNote }: PianoRollProps) {
         timelineDuration * PIXELS_PER_SECOND,
         MIN_TIMELINE_WIDTH
     )
+    const gridDuration = timelineWidth / PIXELS_PER_SECOND
+    const beatMarkers = getBeatMarkers(gridDuration, tempoBpm, beatsPerBar)
 
     if (noteBlocks.length === 0) {
         return <p className='empty-message'>No notes recorded yet.</p>
     }
 
     return (
-        <div className='piano-roll'>
-            <div className='pitch-labels' style={{ height: `${timelineHeight}px` }}>
-            {timelineRows.map((row) => (
-                <div className='pitch-label' key={row.midi}>
-                {row.note}
-                </div>
-            ))}
-            </div>
-
-            <div className='timeline-scroll'>
-                <div className='timeline-grid' 
-                style={{ width: `${timelineWidth}px`, height: `${timelineHeight}px` }}>
-                    {timelineRows.map((row) => (
-                        <div
-                        className='pitch-row'
-                        key={row.midi}
-                        style={{
-                            top: `${(highestTimelineMidi - row.midi) * GRID_ROW_HEIGHT}px`,
-                        }}
-                        />
-                    ))}
-
-                    {noteBlocks.map((block) => {
-                        const left = block.start * PIXELS_PER_SECOND
-                        const width = Math.max(block.duration * PIXELS_PER_SECOND, 18)
-
-                        const rowIndex = highestTimelineMidi - block.midi
-                        const top = rowIndex * GRID_ROW_HEIGHT + GRID_NOTE_PADDING
-
-                        return (
-                        <button
-                            key={block.id}
-                            className={`timeline-block ${block.confidence}`}
-                            style={{
-                            left: `${left}%`,
-                            width: `${width}%`,
-                            top: `${top}px`,
-                            height: `${GRID_ROW_HEIGHT - GRID_NOTE_PADDING * 2}px`,
-                            }}
-                            onClick={() => onPlayNote(block)}
-                            title={`${block.note} | ${block.duration.toFixed(2)}s | ${block.confidence}`}
-                        >
-                            {block.note}
-                        </button>
-                        )
-                    })}
-                </div>
-            </div>
+      <div className='piano-roll'>
+        <div className='pitch-labels' style={{ height: `${timelineHeight}px` }}>
+          {timelineRows.map((row) => (
+              <div className='pitch-label' key={row.midi}>
+              {row.note}
+              </div>
+          ))}
         </div>
+
+        <div className='timeline-scroll'>
+          <div className='timeline-grid' 
+          style={{ width: `${timelineWidth}px`, height: `${timelineHeight}px` }}>
+            {beatMarkers.map((marker) => (
+              <div
+                className={`beat-line ${marker.isBarStart ? "bar-line" : ""}`}
+                key={marker.beatIndex}
+                style={{
+                  left: `${marker.time * PIXELS_PER_SECOND}px`,
+                }}
+              >
+                {marker.isBarStart && (
+                  <span className="bar-label">{marker.barNumber}</span>
+                )}
+              </div>
+            ))}
+            
+            {timelineRows.map((row) => (
+              <div
+                className='pitch-row'
+                key={row.midi}
+                style={{
+                    top: `${(highestTimelineMidi - row.midi) * GRID_ROW_HEIGHT}px`,
+                }}
+              />
+            ))}
+
+            {noteBlocks.map((block) => {
+              const left = block.start * PIXELS_PER_SECOND
+              const width = Math.max(block.duration * PIXELS_PER_SECOND, 18)
+
+              const rowIndex = highestTimelineMidi - block.midi
+              const top = rowIndex * GRID_ROW_HEIGHT + GRID_NOTE_PADDING
+
+              return (
+                <button
+                  key={block.id}
+                  className={`timeline-block ${block.confidence}`}
+                  style={{
+                  left: `${left}%`,
+                  width: `${width}%`,
+                  top: `${top}px`,
+                  height: `${GRID_ROW_HEIGHT - GRID_NOTE_PADDING * 2}px`,
+                  }}
+                  onClick={() => onPlayNote(block)}
+                  title={`${block.note} | ${block.duration.toFixed(2)}s | ${block.confidence}`}
+                >
+                  {block.note}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
     )
 }
 

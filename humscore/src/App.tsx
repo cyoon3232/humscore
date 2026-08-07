@@ -30,6 +30,12 @@ import { applyCalibrationToFrequency } from "./music/calibration"
 import { processPitchFrames } from "./music/pitchProcessing"
 import { scheduleGeneratedNote } from "./music/playback"
 
+import RhythmControls from './components/RhythmControls'
+import {
+  DEFAULT_BEATS_PER_BAR,
+  DEFAULT_TEMPO_BPM
+} from "./music/rhythm"
+
 import PianoRoll from './components/PianoRoll'
 
 const MIN_FREQUENCY = 50
@@ -60,7 +66,11 @@ function App() {
   
   const [noteBlocks, setNoteBlocks] = useState<NoteBlock[]>([])
   const [audioUrl, setAudioUrl] = useState("")
-  const [error, setError] = useState(" ")
+
+  const [tempoBpm, setTempoBpm] = useState(DEFAULT_TEMPO_BPM)
+  const [beatsPerBar, setBeatsPerBar] = useState(DEFAULT_BEATS_PER_BAR)
+
+  const [error, setError] = useState("")
 
   const [calibrationDebug, setCalibrationDebug] = useState<CalibrationDebug>(
     createEmptyCalibrationDebug()
@@ -92,7 +102,7 @@ function App() {
 
   async function startListening() {
     try {
-      setError(" ")
+      setError("")
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true
@@ -296,6 +306,35 @@ function App() {
     const startTime = context.currentTime + 0.05
 
     scheduleGeneratedNote(context, block.midi, startTime, 0.6, 0.16)
+  }
+
+  async function playGeneratedNotesOnly() {
+    if (noteBlocks.length === 0) {
+      setError("Record something first.")
+      return
+    }
+
+    setError("")
+
+    const context = getPlaybackContext()
+
+    if (context.state === "suspended") {
+      await context.resume()
+    }
+
+    const startTime = context.currentTime + 0.1
+
+    for (const block of noteBlocks) {
+      const volume = block.confidence === "strong" ? 0.14 : 0.05
+
+      scheduleGeneratedNote(
+        context,
+        block.midi,
+        startTime + block.start,
+        block.duration,
+        volume
+      )
+    }
   }
 
   async function playVoiceAndGeneratedNotes() {
@@ -558,6 +597,14 @@ function App() {
             )}
 
             <button
+              className="secondary-button"
+              onClick={playGeneratedNotesOnly}
+              disabled={noteBlocks.length === 0}
+            >
+              Play Notes Only
+            </button>
+
+            <button
               className='secondary-button'
               onClick={playVoiceAndGeneratedNotes}
               disabled={!audioUrl || noteBlocks.length === 0}
@@ -571,6 +618,13 @@ function App() {
           )}
         </section>
 
+        <RhythmControls
+          tempoBpm={tempoBpm}
+          beatsPerBar={beatsPerBar}
+          onTempoBpmChange={setTempoBpm}
+          onBeatsPerBarChange={setBeatsPerBar}
+        />
+
         <section className='panel'>
           <div className='section-heading'>
             <h2>4. Timeline</h2>
@@ -579,7 +633,12 @@ function App() {
             </p>
           </div>
 
-          <PianoRoll noteBlocks={noteBlocks} onPlayNote={playSingleGeneratedNote} />
+          <PianoRoll 
+            noteBlocks={noteBlocks} 
+            tempoBpm={tempoBpm}
+            beatsPerBar={beatsPerBar}
+            onPlayNote={playSingleGeneratedNote} 
+          />
         
         </section>
 
