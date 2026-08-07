@@ -20,6 +20,12 @@ import {
   midiToNote,
 } from "./music/noteUtils"
 
+import {
+  createEmptyCalibrationDebug,
+  evaluateCalibrationSample,
+  updateCalibrationDebug
+} from "./music/calibrationCapture"
+
 import { applyCalibrationToFrequency } from "./music/calibration"
 import { processPitchFrames } from "./music/pitchProcessing"
 import { scheduleGeneratedNote } from "./music/playback"
@@ -35,19 +41,6 @@ const MIN_CALIBRATION_CLARITY = 0.3
 const MIN_CALIBRATION_VOLUME = 0.0025
 const MIN_CALIBRATION_SAMPLES = 3
 const CALIBRATION_CAPTURE_MS = 1800
-
-function createEmptyCalibrationDebug(): CalibrationDebug {
-  return {
-    framesSeen: 0,
-    acceptedSamples: 0,
-    rejectedLowClarity: 0,
-    rejectedLowVolume: 0,
-    rejectedOutOfRange: 0,
-    lastPitch: null,
-    lastClarity: null,
-    lastVolume: null,
-  }
-}
 
 function App() {
   const [isListening, setIsListening] = useState(false)
