@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { PitchDetector } from 'pitchy'
 import './App.css'
 
@@ -33,8 +33,11 @@ import { scheduleGeneratedNote } from "./music/playback"
 import RhythmControls from './components/RhythmControls'
 import {
   DEFAULT_BEATS_PER_BAR,
+  DEFAULT_STEPS_PER_BEAT,
   DEFAULT_TEMPO_BPM
 } from "./music/rhythm"
+
+import { quantizeNoteBlocks } from "./music/quantize"
 
 import PianoRoll from './components/PianoRoll'
 
@@ -70,6 +73,22 @@ function App() {
   const [tempoBpm, setTempoBpm] = useState(DEFAULT_TEMPO_BPM)
   const [beatsPerBar, setBeatsPerBar] = useState(DEFAULT_BEATS_PER_BAR)
 
+  const [stepsPerBeat, setStepsPerBeat] = useState(DEFAULT_STEPS_PER_BEAT)
+  const [isQuantized, setIsQuantized] = useState(false)
+
+  /**
+   * noteBlocks keeps the original detected timings.
+   * displayedNoteBlocks is the version currently shown and played.
+   */
+  const displayedNoteBlocks = useMemo(() => {
+    if (!isQuantized) return noteBlocks
+
+    return quantizeNoteBlocks(noteBlocks, {
+      tempoBpm,
+      stepsPerBeat,
+    })
+  }, [isQuantized, noteBlocks, tempoBpm, stepsPerBeat])
+
   const [error, setError] = useState("")
 
   const [calibrationDebug, setCalibrationDebug] = useState<CalibrationDebug>(
@@ -85,6 +104,7 @@ function App() {
   const calibrationPointsRef = useRef<CalibrationPoint[]>([])
 
   const isCalibratingRef = useRef(false)
+  
   const calibrationSamplesRef = useRef<number[]>([])
   const calibrationDebugRef = useRef<CalibrationDebug>(
     createEmptyCalibrationDebug()
@@ -252,6 +272,7 @@ function App() {
 
     setError("")
     setNoteBlocks([])
+    setIsQuantized(false)
     pitchFramesRef.current = []
     recordingStartTimeRef.current = performance.now() / 1000
     isRecordingRef.current = true
@@ -309,7 +330,7 @@ function App() {
   }
 
   async function playGeneratedNotesOnly() {
-    if (noteBlocks.length === 0) {
+    if (displayedNoteBlocks.length === 0) {
       setError("Record something first.")
       return
     }
@@ -324,7 +345,7 @@ function App() {
 
     const startTime = context.currentTime + 0.1
 
-    for (const block of noteBlocks) {
+    for (const block of displayedNoteBlocks) {
       const volume = block.confidence === "strong" ? 0.14 : 0.05
 
       scheduleGeneratedNote(
@@ -352,7 +373,7 @@ function App() {
     const startDelayMs = 150
     const startTime = context.currentTime + startDelayMs / 1000
 
-    for (const block of noteBlocks) {
+    for (const block of displayedNoteBlocks) {
       const volume = block.confidence === "strong" ? 0.13 : 0.05
       scheduleGeneratedNote(
         context,
@@ -599,7 +620,7 @@ function App() {
             <button
               className="secondary-button"
               onClick={playGeneratedNotesOnly}
-              disabled={noteBlocks.length === 0}
+              disabled={displayedNoteBlocks.length === 0}
             >
               Play Notes Only
             </button>
@@ -607,7 +628,7 @@ function App() {
             <button
               className='secondary-button'
               onClick={playVoiceAndGeneratedNotes}
-              disabled={!audioUrl || noteBlocks.length === 0}
+              disabled={!audioUrl || displayedNoteBlocks.length === 0}
             >
               Play Voice + Notes
             </button>
@@ -621,8 +642,12 @@ function App() {
         <RhythmControls
           tempoBpm={tempoBpm}
           beatsPerBar={beatsPerBar}
+          stepsPerBeat={stepsPerBeat}
+          isQuantized={isQuantized}
           onTempoBpmChange={setTempoBpm}
           onBeatsPerBarChange={setBeatsPerBar}
+          onStepsPerBeatChange={setStepsPerBeat}
+          onIsQuantizedChange={setIsQuantized}
         />
 
         <section className='panel'>
@@ -634,7 +659,7 @@ function App() {
           </div>
 
           <PianoRoll 
-            noteBlocks={noteBlocks} 
+            noteBlocks={displayedNoteBlocks} 
             tempoBpm={tempoBpm}
             beatsPerBar={beatsPerBar}
             onPlayNote={playSingleGeneratedNote} 

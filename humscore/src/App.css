@@ -240,6 +240,92 @@ Timeline CSS
   color: #333;
 }
 
+/*
+================================
+Rhythm Controls
+================================
+*/
+.rhythm-controls {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #555;
+  font-size: 14px;
+}
+
+.control-group input {
+  width: 90px;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.control-unit {
+  color: #777;
+}
+
+/*
+==========================
+Beat/Bar Line
+==========================
+*/
+.beat-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #eeeeee;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.beat-line.bar-line {
+  width: 2px;
+  background: #cfcfcf;
+}
+
+.bar-label {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: 11px;
+  color: #777;
+  background: white;
+  padding: 1px 4px;
+  border-radius: 999px;
+}
+
+.timeline-block {
+  z-index: 2;
+}
+
+/*
+=======================
+Checkbox Controls
+=======================
+*/
+.checkbox-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #555;
+  font-size: 14px;
+}
+
+.checkbox-control input {
+  width: 16px;
+  height: 16px;
+}
+
+
 .empty-message {
   color: #777;
   text-align: center;

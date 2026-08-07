@@ -6,6 +6,10 @@ export const DEFAULT_BEATS_PER_BAR = 4
 export const MIN_BEATS_PER_BAR = 1
 export const MAX_BEATS_PER_BAR = 12
 
+export const DEFAULT_STEPS_PER_BEAT = 2
+export const MIN_STEPS_PER_BEAT = 1
+export const MAX_STEPS_PER_BEAT = 8
+
 export type BeatMarker = {
   time: number
   beatIndex: number
@@ -23,9 +27,17 @@ export function normalizeTempoBpm(value: number) {
   return Math.min(Math.max(Math.round(value), MIN_TEMPO_BPM), MAX_TEMPO_BPM)
 }
 
+export function normalizeStepsPerBeat(value: number) {
+  if (!Number.isFinite(value)) return DEFAULT_STEPS_PER_BEAT
+
+  return Math.min(
+    Math.max(Math.round(value), MIN_STEPS_PER_BEAT),
+    MAX_STEPS_PER_BEAT
+  )
+}
+
 /**
  * Keeps the top number of the time signature inside a practical range
- * (For now, this controls visual bar grouping only)
  */
 export function normalizeBeatsPerBar(value: number) {
   if (!Number.isFinite(value)) return DEFAULT_BEATS_PER_BAR
@@ -45,8 +57,15 @@ export function getSecondsPerBeat(tempoBpm: number) {
 }
 
 /**
+ * Converts tempo and subdivision into one editable grid step.
+ * Example: 120 BPM and 2 steps per beat means each grid step is 0.25 seconds.
+ */
+export function getSecondsPerGridStep(tempoBpm: number, stepsPerBeat: number) {
+  return getSecondsPerBeat(tempoBpm) / normalizeStepsPerBeat(stepsPerBeat)
+}
+
+/**
  * Creates vertical grid markers for beats and bar starts
- * (These markers are visual only REMEMEBER TODO: note quantization)
  */
 export function getBeatMarkers(
   durationSeconds: number,
