@@ -42,6 +42,13 @@ const MIN_CALIBRATION_VOLUME = 0.0025
 const MIN_CALIBRATION_SAMPLES = 3
 const CALIBRATION_CAPTURE_MS = 1800
 
+const CALIBRATION_CAPTURE_CONFIG = {
+  minFrequency: MIN_FREQUENCY,
+  maxFrequency: MAX_FREQUENCY,
+  minClarity: MIN_CALIBRATION_CLARITY,
+  minVolume: MIN_CALIBRATION_VOLUME,
+}
+
 function App() {
   const [isListening, setIsListening] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
@@ -50,8 +57,6 @@ function App() {
   const [livePitch, setLivePitch] = useState<LivePitch | null>(null)
   const [calibrationPoints, setCalibrationPoints] = useState<CalibrationPoint[]>([])
   const [pendingCalibration, setPendingCalibration] = useState<PendingCalibration | null>(null)
-
-  const [selectedBlockId, setSelectedBlockId] = useState<number | null>(null)
   
   const [noteBlocks, setNoteBlocks] = useState<NoteBlock[]>([])
   const [audioUrl, setAudioUrl] = useState("")
@@ -348,30 +353,29 @@ function App() {
     const [pitch, clarity] = detector.findPitch(input, audioContext.sampleRate)
 
     if (isCalibratingRef.current) {
-      const debug = calibrationDebugRef.current
-
-      debug.framesSeen += 1
-      debug.lastPitch = Number.isFinite(pitch) ? pitch : null
-      debug.lastClarity = clarity
-      debug.lastVolume = volume
-
-      const pitchInRange = pitch >= MIN_FREQUENCY && pitch <= MAX_FREQUENCY
-      const clearEnoughForCalibration = clarity >= MIN_CALIBRATION_CLARITY
-      const loudEnoughForCalibration = volume >= MIN_CALIBRATION_VOLUME
-
-      if (!pitchInRange) {
-        debug.rejectedOutOfRange += 1
-      } else if (!clearEnoughForCalibration) {
-        debug.rejectedLowClarity += 1
-      } else if (!loudEnoughForCalibration) {
-        debug.rejectedLowVolume += 1
-      } else {
-        calibrationSamplesRef.current.push(pitch)
-        debug.acceptedSamples = calibrationSamplesRef.current.length
+      const sample = {
+        pitch,
+        clarity,
+        volume,
       }
 
-      calibrationDebugRef.current = debug
-      setCalibrationDebug({ ...debug })
+      const decision = evaluateCalibrationSample(
+        sample,
+        CALIBRATION_CAPTURE_CONFIG
+      )
+
+      const nextDebug = updateCalibrationDebug(
+        calibrationDebugRef.current,
+        sample,
+        decision
+      )
+
+      calibrationDebugRef.current = nextDebug
+      setCalibrationDebug(nextDebug)
+
+      if (decision.accepted) {
+        calibrationSamplesRef.current.push(pitch)
+      }
     }
 
     const reliableEnough =
