@@ -21,6 +21,11 @@ export function processPitchFrames(frames: PitchFrame[]) {
     const last = group[group.length - 1]
 
     const start = first.time
+    const rawDuration = Math.max(last.time - first.time, 0)
+
+    // Ignores a single pitch frame
+    if (group.length === 1 && rawDuration < MIN_UNCERTAIN_DURATION) return
+
     const duration = Math.max(last.time - first.time, 0.05)
     const end = start + duration
 
@@ -29,9 +34,7 @@ export function processPitchFrames(frames: PitchFrame[]) {
 
     const averageVolume =
       group.reduce((sum, frame) => sum + frame.volume, 0) / group.length
-
-    if (duration < MIN_UNCERTAIN_DURATION) return
-
+      
     const confidence =
       duration >= MIN_STRONG_DURATION &&
       averageClarity >= GOOD_CLARITY &&
