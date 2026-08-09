@@ -1,6 +1,11 @@
 import type { CalibrationPoint } from "../types"
 import { frequencyToMidiFloat } from "./noteUtils"
 
+/**
+ * Calibration helpers for correcting consistent pitch offset.
+ */
+
+/** Estimates the user's pitch offset at a MIDI note using saved calibration points. */
 export function getCalibrationOffsetForMidi(
   midi: number,
   calibrationPoints: CalibrationPoint[]
@@ -40,6 +45,7 @@ export function getCalibrationOffsetForMidi(
   return 0;
 }
 
+/** Applies the estimated calibration offset to a detected frequency. */
 export function applyCalibrationToFrequency(
   frequency: number,
   calibrationPoints: CalibrationPoint[]

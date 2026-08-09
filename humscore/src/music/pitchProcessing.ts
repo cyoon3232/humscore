@@ -1,5 +1,9 @@
 import type { NoteBlock, PitchFrame } from "../types"
 
+/**
+ * Converts raw pitch frames into editable note blocks.
+ */
+
 const GOOD_CLARITY = 0.75
 const GOOD_VOLUME = 0.012
 
@@ -7,6 +11,7 @@ const MIN_UNCERTAIN_DURATION = 0.05
 const MIN_STRONG_DURATION = 0.18
 const MAX_GAP_BETWEEN_FRAMES = 0.14
 
+/** Groups nearby pitch frames into note blocks for the piano-roll editor. */
 export function processPitchFrames(frames: PitchFrame[]) {
   const blocks: NoteBlock[] = []
 
@@ -14,6 +19,7 @@ export function processPitchFrames(frames: PitchFrame[]) {
 
   let currentGroup: PitchFrame[] = [frames[0]]
 
+  // Single-frame detections are usually noise; repeated short detections become uncertain notes.
   function finishGroup(group: PitchFrame[]) {
     if (group.length === 0) return
 

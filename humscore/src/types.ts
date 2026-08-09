@@ -1,3 +1,9 @@
+/**
+ * Shared domain types for pitchdetection, calibration, and note editing.
+ */
+
+
+// Current pitch estimate shown in the live microphone display.
 export type LivePitch = {
     frequency: number,
     note: string,
@@ -7,6 +13,7 @@ export type LivePitch = {
     volume: number
 }
 
+// One timestamped pitch sample collected while recording.
 export type PitchFrame = {
     time: number,
     frequency: number,
@@ -18,6 +25,7 @@ export type PitchFrame = {
     volume: number
 }
 
+// A grouped note segment shown in the piano-roll editor.
 export type NoteBlock = {
     id: number,
     note: string,
@@ -30,6 +38,7 @@ export type NoteBlock = {
     averageVolume: number
 }
 
+// User-confirmed pitch offset used to improve note detection.
 export type CalibrationPoint = {
     id: number,
     selectedNote: string,
@@ -38,18 +47,20 @@ export type CalibrationPoint = {
     offsetCents: number,
 }
 
+// One note option shown after a calibration capture.
 export type CalibrationChoice = {
     note: string,
     midi: number
 }
 
+// Pending calibration result waiting for user confirmation.
 export type PendingCalibration = {
     detectedFrequency: number,
     detectedNote: string,
     choices: CalibrationChoice[]
 }
 
-// displays how calibration failed
+// Counters used to explain why calibration samples were accepted or rejected.
 export type CalibrationDebug = {
     framesSeen: number,
     acceptedSamples: number,

@@ -1,5 +1,9 @@
 import type { CalibrationDebug } from "../types"
 
+/**
+ * Helpers for accepting, rejecting, and debugging calibration samples.
+ */
+
 export type CalibrationSample = {
   pitch: number,
   clarity: number,
@@ -20,9 +24,7 @@ export type CalibrationSampleDecision =
     reason: "outOfRange" | "lowClarity" | "lowVolume"
     }
 
-/**
- * Creates a blank debug object for one calibration attempt
- */
+/** Creates a blank debug object for one calibration attempt. */
 export function createEmptyCalibrationDebug(): CalibrationDebug {
   return {
     framesSeen: 0,
@@ -36,9 +38,7 @@ export function createEmptyCalibrationDebug(): CalibrationDebug {
   }
 } 
 
-/**
- * Decides whether a detected pitch frame is usable for calibration
- */
+/** Decides whether a pitch sample is usable for calibration. */
 export function evaluateCalibrationSample(
   sample: CalibrationSample,
   config: CalibrationCaptureConfig
@@ -74,9 +74,7 @@ export function evaluateCalibrationSample(
   }
 }
 
-/**
- * Updates calibration debug counters without mutating the previous object
- */
+/** Returns updated calibration debug counters for one sample decision. */
 export function updateCalibrationDebug(
   previousDebug: CalibrationDebug,
   sample: CalibrationSample,

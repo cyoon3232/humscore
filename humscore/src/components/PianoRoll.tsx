@@ -2,6 +2,10 @@ import type { NoteBlock } from "../types"
 import { midiToNote } from "../music/noteUtils"
 import { getBeatMarkers } from "../music/rhythm"
 
+/**
+ * Piano-roll timeline for displaying detected notes by time and pitch.
+ */
+
 const GRID_ROW_HEIGHT = 34
 const GRID_NOTE_PADDING = 4
 const MIN_TIMELINE_SECONDS = 1
@@ -15,6 +19,7 @@ type PianoRollProps = {
   onPlayNote: (block: NoteBlock) => void
 }
 
+/** Builds the visible pitch rows around the recorded note range. */
 function getTimelineRows(blocks: NoteBlock[]) {
   if (blocks.length === 0) return []
 
@@ -35,6 +40,7 @@ function getTimelineRows(blocks: NoteBlock[]) {
   return rows
 }
 
+/** Renders note blocks on a scrollable pitch/time grid. */
 function PianoRoll({ 
   noteBlocks,
   tempoBpm,

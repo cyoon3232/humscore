@@ -1,14 +1,16 @@
 import type { NoteBlock } from "../types"
 import { getSecondsPerGridStep } from "./rhythm"
 
+/**
+ * Quantization helpers for snapping note blocks to the rhythm grid.
+ */
+
 export type QuantizeConfig = {
   tempoBpm: number
   stepsPerBeat: number
 }
 
-/**
- * Snaps a time value to the nearest grid line
- */
+/** Snaps a time value to the nearest grid line. */
 export function quantizeTimeToGrid(timeSeconds: number, gridStepSeconds: number) {
   if (!Number.isFinite(timeSeconds)) return 0
   if (!Number.isFinite(gridStepSeconds) || gridStepSeconds <= 0) return timeSeconds
@@ -16,10 +18,7 @@ export function quantizeTimeToGrid(timeSeconds: number, gridStepSeconds: number)
   return Math.max(0, Math.round(timeSeconds / gridStepSeconds) * gridStepSeconds)
 }
 
-/**
- * Returns a snapped copy of one note block
- * The original detected block is not mutated
- */
+/** Returns a snapped copy of one note block without mutating the original. */
 export function quantizeNoteBlock(block: NoteBlock, config: QuantizeConfig) {
   const gridStepSeconds = getSecondsPerGridStep(
     config.tempoBpm,
@@ -42,9 +41,7 @@ export function quantizeNoteBlock(block: NoteBlock, config: QuantizeConfig) {
   }
 }
 
-/**
- * Quantizes all note blocks and keeps them sorted by time
- */
+/** Quantizes all note blocks and keeps them sorted by time. */
 export function quantizeNoteBlocks(
   blocks: NoteBlock[],
   config: QuantizeConfig

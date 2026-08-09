@@ -41,6 +41,14 @@ import { quantizeNoteBlocks } from "./music/quantize"
 
 import PianoRoll from './components/PianoRoll'
 
+/**
+ * Main App
+ * 
+ * Coordinates microphone capture, pitch detection, calibration, recording,
+ * playback, and editor state for HumScore
+ */
+
+// Pitch and calibration thresholds separated so calibration accepts rougher input
 const MIN_FREQUENCY = 50
 const MAX_FREQUENCY = 1000
 const MIN_RECORDING_CLARITY = 0.55
@@ -104,7 +112,6 @@ function App() {
   const calibrationPointsRef = useRef<CalibrationPoint[]>([])
 
   const isCalibratingRef = useRef(false)
-  
   const calibrationSamplesRef = useRef<number[]>([])
   const calibrationDebugRef = useRef<CalibrationDebug>(
     createEmptyCalibrationDebug()
@@ -120,6 +127,7 @@ function App() {
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null)
   const playbackContextRef = useRef<AudioContext | null>(null)
 
+  /** Initializes microphone input and pitch analysis. */
   async function startListening() {
     try {
       setError("")
@@ -132,6 +140,8 @@ function App() {
       const source = audioContext.createMediaStreamSource(stream)
 
       const analyser = audioContext.createAnalyser()
+      
+      // may need adjustment
       analyser.fftSize = 2048
 
       source.connect(analyser)
@@ -149,6 +159,7 @@ function App() {
     }
   }
 
+  /** Stops active audio capture and clears browser audio resources. */
   function stopListening() {
     stopRecording()
 
@@ -175,6 +186,7 @@ function App() {
     setLivePitch(null)
   }
 
+  /** Starts a short calibration window for collecting pitch samples. */
   function startCalibrationCapture() {
     if (!isListening) {
       setError("Start listening first.")
@@ -198,6 +210,7 @@ function App() {
     }, CALIBRATION_CAPTURE_MS)
   }
 
+  /** Converts collected calibration samples into note choices for the user. */
   function finishCalibrationCapture() {
     const samples = calibrationSamplesRef.current
 
@@ -232,6 +245,7 @@ function App() {
     })
   }
 
+  /** Saves the user's intended calibration note and calculate pitch offset. */
   function chooseCalibrationNote(choice: CalibrationChoice) {
     if (!pendingCalibration) return
 
@@ -258,12 +272,14 @@ function App() {
     setPendingCalibration(null)
   }
 
+  /** Removes all saved calibration points. */
   function clearCalibration() {
     setCalibrationPoints([])
     calibrationPointsRef.current = []
     setPendingCalibration(null)
   }
 
+  /** Starts raw audio recording and pitch-frame collection. */
   function startRecording() {
     if (!streamRef.current) {
       setError("Start listening first.")
@@ -308,6 +324,7 @@ function App() {
     recorder.start()
   }
 
+  /** Stops recording and convert collected pitch frames into note blocks. */
   function stopRecording() {
     if (!isRecordingRef.current) return
 
@@ -322,6 +339,7 @@ function App() {
     setNoteBlocks(processedBlocks)
   }
 
+  /** Plays one generated note block for quick review. */
   function playSingleGeneratedNote(block: NoteBlock) {
     const context = getPlaybackContext()
     const startTime = context.currentTime + 0.05
@@ -329,6 +347,7 @@ function App() {
     scheduleGeneratedNote(context, block.midi, startTime, 0.6, 0.16)
   }
 
+  /** Plays the generated note blocks without voice recording. */
   async function playGeneratedNotesOnly() {
     if (displayedNoteBlocks.length === 0) {
       setError("Record something first.")
@@ -358,6 +377,7 @@ function App() {
     }
   }
 
+  /** Plays the voice recording with generated notes. */
   async function playVoiceAndGeneratedNotes() {
     if (!audioUrl || !audioPlayerRef.current) {
       setError("Record something first.")
@@ -391,6 +411,7 @@ function App() {
     }, startDelayMs)
   }
 
+  /** Returns the playback audio context used for generated notes. */
   function getPlaybackContext() {
     if (!playbackContextRef.current) {
       playbackContextRef.current = new AudioContext()
@@ -399,6 +420,7 @@ function App() {
     return playbackContextRef.current
   }
 
+  /** Reads microphone samples, detects pitch, and records usable pitch frames. */
   function detectPitch() {
     const audioContext = audioContextRef.current
     const analyser = analyserRef.current

@@ -1,3 +1,7 @@
+/**
+ * Rhythm helpers for tempo, beat spacing, and timeline grid markers.
+ */
+
 export const DEFAULT_TEMPO_BPM = 120
 export const MIN_TEMPO_BPM = 40
 export const MAX_TEMPO_BPM = 240
@@ -18,15 +22,14 @@ export type BeatMarker = {
   isBarStart: boolean
 }
 
-/**
- * Keeps tempo values inside a practical range for editing and playback
- */
+/** Clamps tempo to the supported editing range. */
 export function normalizeTempoBpm(value: number) {
   if (!Number.isFinite(value)) return DEFAULT_TEMPO_BPM
 
   return Math.min(Math.max(Math.round(value), MIN_TEMPO_BPM), MAX_TEMPO_BPM)
 }
 
+/** Clamps grid subdivisions to the supported editing range. */
 export function normalizeStepsPerBeat(value: number) {
   if (!Number.isFinite(value)) return DEFAULT_STEPS_PER_BEAT
 
@@ -36,9 +39,7 @@ export function normalizeStepsPerBeat(value: number) {
   )
 }
 
-/**
- * Keeps the top number of the time signature inside a practical range
- */
+/** Clamps beats-per-bar to the supported visual grid range. */
 export function normalizeBeatsPerBar(value: number) {
   if (!Number.isFinite(value)) return DEFAULT_BEATS_PER_BAR
 

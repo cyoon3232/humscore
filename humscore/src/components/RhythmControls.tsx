@@ -10,6 +10,10 @@ import {
   normalizeTempoBpm,
 } from "../music/rhythm"
 
+/**
+ * Controls for tempo, bar grouping, and quantized timeline display.
+ */
+
 type RhythmControlsProps = {
   tempoBpm: number
   beatsPerBar: number
@@ -21,6 +25,7 @@ type RhythmControlsProps = {
   onIsQuantizedChange: (isQuantized: boolean) => void
 }
 
+/** Renders rhythm settings used by the piano-roll editor. */
 function RhythmControls({
   tempoBpm,
   beatsPerBar,

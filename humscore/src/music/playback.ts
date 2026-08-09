@@ -1,5 +1,10 @@
 import { midiToFrequency } from "./noteUtils"
 
+/**
+ * Playback helpers for generated note audio.
+ */
+
+/** Schedules a generated tone using the Web Audio API. */
 export function scheduleGeneratedNote(
     context: AudioContext,
     midi: number,
