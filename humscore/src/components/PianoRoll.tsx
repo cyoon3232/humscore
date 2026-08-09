@@ -19,6 +19,10 @@ type PianoRollProps = {
   onPlayNote: (block: NoteBlock) => void
 }
 
+function isAccidentalNote(note: string) {
+  return note.includes("#") || note.includes("b") || note.includes("/")
+}
+
 /** Builds the visible pitch rows around the recorded note range. */
 function getTimelineRows(blocks: NoteBlock[]) {
   if (blocks.length === 0) return []
@@ -70,8 +74,11 @@ function PianoRoll({
       <div className='piano-roll'>
         <div className='pitch-labels' style={{ height: `${timelineHeight}px` }}>
           {timelineRows.map((row) => (
-              <div className='pitch-label' key={row.midi}>
-              {row.note}
+              <div 
+                className={`pitch-label ${isAccidentalNote(row.note) ? "accidental" : "natural"}`} 
+                key={row.midi}
+              >
+                {row.note}
               </div>
           ))}
         </div>

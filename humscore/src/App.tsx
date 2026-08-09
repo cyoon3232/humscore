@@ -505,192 +505,218 @@ function App() {
   }
 
   return (
-    <main className='app'>
-      <section className='card'>
-        <h1>HumScore</h1>
-        <p className='subtitle'>
-          Sing or hum a note. The app will detect the pitch and write it down. Clean it up after.
-        </p>
-
-        <section className='panel'>
-          <h2>1. Microphone</h2>
-          <div className='button-row'>
-            {!isListening ? (
-              <button onClick={startListening}>Start Listening</button>
-            ) : (
-              <button className='danger-button' onClick={stopListening}>
-                Stop Listening
-              </button>
-            )}
+    <main className='studio-app'>
+      <header className='studio-header'>
+        <div className='studio-brand'>
+          <h1>HumScore</h1>
+          <p className='studio-tagline'>
+            Capture your humming. Clean it up.
+          </p>
         </div>
 
-        {livePitch ? (
-          <div className='live-pitch'>
-            <p className='label'>Live detected note</p>
-            <p className='note'>{livePitch.note}</p>
-            <p className='details'>
-              raw: {livePitch.rawNote} | {livePitch.frequency.toFixed(1)} Hz |{" "}
-              {livePitch.cents} cents | clarity {livePitch.clarity.toFixed(2)}
-            </p>
-          </div>
-        ) : (
-          <p className="empty-message">Waiting for sound...</p>
-        )}
-        </section>
+        <div className='studio-status'>
+          <span className={`status-pill ${isListening ? "live": ""}`}>
+            {isListening ? "Mic On" : "Mic Off"}
+          </span>
+          <span className={`status-pill ${isRecording ? "recording" : ""}`}>
+            {isRecording ? "Recording" : "Idle"}
+          </span>
+        </div>
+      </header>
 
-        <section className='panel'>
-          <div className='section-heading'>
-            <h2>2. Calibration</h2>
-            <p>{calibrationPoints.length}/3 saved</p>
-          </div>
+      <div className='studio-shell'>
+        <aside className='studio-sidebar'>
+          <section className='panel sidebar-panel'>
+            <h2>Microphone</h2>
 
-          <p className='helper-text'>
-            Hum a low, middle, and high comfortable note. After each hum, choose
-            the note you intended.
-          </p>
+            <div className='button-row'>
+              {!isListening ? (
+                <button onClick={startListening}>Start Listening</button>
+              ) : (
+                <button className='danger-button' onClick={stopListening}>
+                  Stop Listening
+                </button>
+              )}
+            </div>
 
-          <div className='button-row'>
-            <button 
-              className='secondary-button' 
-              onClick={startCalibrationCapture} 
-              disabled={!isListening || isCalibrating} 
-            >
-              {isCalibrating ? "Listening..." : "Capture Calibration Note"}
-            </button>
-
-            <button className='light-button' onClick={clearCalibration}>
-              Clear Calibration
-            </button>
-          </div>
-
-          {pendingCalibration && (
-            <div className='choice-box'>
-              <p>
-                I heard around <strong>{pendingCalibration.detectedNote}</strong>.
-                Which note did you intend?
-              </p>
-
-              <div className='choice-row'>
-                {pendingCalibration.choices.map((choice) => (
-                  <button
-                    className='choice-button'
-                    key={choice.note}
-                    onClick={() => chooseCalibrationNote(choice)}
-                  >
-                    {choice.note}
-                  </button>
-                ))}
+            {livePitch ? (
+              <div className='live-pitch'>
+                <p className='label'>Live detected note</p>
+                <p className='note'>{livePitch.note}</p>
+                <p className='details'>
+                  raw: {livePitch.rawNote} | {livePitch.frequency.toFixed(1)} Hz |{" "}
+                  {livePitch.cents} cents | clarity {livePitch.clarity.toFixed(2)}
+                </p>
               </div>
-            </div>
-          )}
-
-          {calibrationPoints.length > 0 && (
-            <div className='calibration-list'>
-              {calibrationPoints.map((point) => (
-                <div className='calibration-item' key={point.id}>
-                  <span>{point.selectedNote}</span>
-                  <span>
-                    {point.offsetCents > 0 ? "+" : ""}
-                    {point.offsetCents} cents
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="debug-box">
-            <p>
-              Calibration debug: accepted {calibrationDebug.acceptedSamples} /{" "}
-              {calibrationDebug.framesSeen} frames
-            </p>
-            <p>
-              low clarity: {calibrationDebug.rejectedLowClarity} | low volume:{" "}
-              {calibrationDebug.rejectedLowVolume} | out of range:{" "}
-              {calibrationDebug.rejectedOutOfRange}
-            </p>
-            <p>
-              last pitch:{" "}
-              {calibrationDebug.lastPitch
-                ? `${calibrationDebug.lastPitch.toFixed(1)} Hz`
-                : "--"}{" "}
-              | clarity:{" "}
-              {calibrationDebug.lastClarity
-                ? calibrationDebug.lastClarity.toFixed(2)
-                : "--"}{" "}
-              | volume:{" "}
-              {calibrationDebug.lastVolume
-                ? calibrationDebug.lastVolume.toFixed(4)
-                : "--"}
-            </p>
-          </div>
-        </section>
-
-        <section className='panel'>
-          <h2>3. Record Melody</h2>
-
-          <div className='button-row'>
-            {!isRecording ? (
-              <button onClick={startRecording} disabled={!isListening}>
-                Start Recording
-              </button>
             ) : (
-              <button className='danger-button' onClick={stopRecording}>
-                Stop Recording
+              <p className="empty-message">Waiting for sound...</p>
+            )}
+          </section>
+
+          <section className='panel sidebar-panel'>
+            <div className='section-heading'>
+              <h2>Calibration</h2>
+              <p>{calibrationPoints.length}/3 saved</p>
+            </div>
+
+            <p className='helper-text'>
+              Hum a low, middle, and high comfortable note. After each hum, choose
+              the note you intended.
+            </p>
+
+            <div className='button-row'>
+              <button 
+                className='secondary-button' 
+                onClick={startCalibrationCapture} 
+                disabled={!isListening || isCalibrating} 
+              >
+                {isCalibrating ? "Listening..." : "Capture Calibration Note"}
               </button>
+
+              <button className='light-button' onClick={clearCalibration}>
+                Clear Calibration
+              </button>
+            </div>
+
+            {pendingCalibration && (
+              <div className='choice-box'>
+                <p>
+                  I heard around <strong>{pendingCalibration.detectedNote}</strong>.
+                  Which note did you intend?
+                </p>
+
+                <div className='choice-row'>
+                  {pendingCalibration.choices.map((choice) => (
+                    <button
+                      className='choice-button'
+                      key={choice.note}
+                      onClick={() => chooseCalibrationNote(choice)}
+                    >
+                      {choice.note}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
-            <button
-              className="secondary-button"
-              onClick={playGeneratedNotesOnly}
-              disabled={displayedNoteBlocks.length === 0}
-            >
-              Play Notes Only
-            </button>
+            {calibrationPoints.length > 0 && (
+              <div className='calibration-list'>
+                {calibrationPoints.map((point) => (
+                  <div className='calibration-item' key={point.id}>
+                    <span>{point.selectedNote}</span>
+                    <span>
+                      {point.offsetCents > 0 ? "+" : ""}
+                      {point.offsetCents} cents
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
-            <button
-              className='secondary-button'
-              onClick={playVoiceAndGeneratedNotes}
-              disabled={!audioUrl || displayedNoteBlocks.length === 0}
-            >
-              Play Voice + Notes
-            </button>
-          </div>
+            <div className="debug-box">
+              <p>
+                Calibration debug: accepted {calibrationDebug.acceptedSamples} /{" "}
+                {calibrationDebug.framesSeen} frames
+              </p>
+              <p>
+                low clarity: {calibrationDebug.rejectedLowClarity} | low volume:{" "}
+                {calibrationDebug.rejectedLowVolume} | out of range:{" "}
+                {calibrationDebug.rejectedOutOfRange}
+              </p>
+              <p>
+                last pitch:{" "}
+                {calibrationDebug.lastPitch
+                  ? `${calibrationDebug.lastPitch.toFixed(1)} Hz`
+                  : "--"}{" "}
+                | clarity:{" "}
+                {calibrationDebug.lastClarity
+                  ? calibrationDebug.lastClarity.toFixed(2)
+                  : "--"}{" "}
+                | volume:{" "}
+                {calibrationDebug.lastVolume
+                  ? calibrationDebug.lastVolume.toFixed(4)
+                  : "--"}
+              </p>
+            </div>
+          </section>
 
-          {audioUrl && (
-            <audio ref={audioPlayerRef} src={audioUrl} controls className='audio' />
-          )}
-        </section>
+          <section className='panel sidebar-panel'>
+            <h2>Recording</h2>
+            <div className='button-row'>
+              {!isRecording ? (
+                <button onClick={startRecording} disabled={!isListening}>
+                  Start Recording
+                </button>
+              ) : (
+                <button className='danger-button' onClick={stopRecording}>
+                  Stop Recording
+                </button>
+              )}
 
-        <RhythmControls
-          tempoBpm={tempoBpm}
-          beatsPerBar={beatsPerBar}
-          stepsPerBeat={stepsPerBeat}
-          isQuantized={isQuantized}
-          onTempoBpmChange={setTempoBpm}
-          onBeatsPerBarChange={setBeatsPerBar}
-          onStepsPerBeatChange={setStepsPerBeat}
-          onIsQuantizedChange={setIsQuantized}
-        />
+              <button
+                className="secondary-button"
+                onClick={playGeneratedNotesOnly}
+                disabled={displayedNoteBlocks.length === 0}
+              >
+                Play Notes Only
+              </button>
 
-        <section className='panel'>
-          <div className='section-heading'>
-            <h2>4. Timeline</h2>
-            <p>
-              black = confident, grey = uncertain. Click a block to hear that note.
-            </p>
-          </div>
+              <button
+                className='secondary-button'
+                onClick={playVoiceAndGeneratedNotes}
+                disabled={!audioUrl || displayedNoteBlocks.length === 0}
+              >
+                Play Voice + Notes
+              </button>
+            </div>
 
-          <PianoRoll 
-            noteBlocks={displayedNoteBlocks} 
+            {audioUrl && (
+              <audio ref={audioPlayerRef} src={audioUrl} controls className='audio' />
+            )}
+          </section>
+
+          <RhythmControls
             tempoBpm={tempoBpm}
             beatsPerBar={beatsPerBar}
-            onPlayNote={playSingleGeneratedNote} 
+            stepsPerBeat={stepsPerBeat}
+            isQuantized={isQuantized}
+            onTempoBpmChange={setTempoBpm}
+            onBeatsPerBarChange={setBeatsPerBar}
+            onStepsPerBeatChange={setStepsPerBeat}
+            onIsQuantizedChange={setIsQuantized}
           />
-        
-        </section>
+        </aside>
 
-        {error && <p className='error'>{error}</p>}
-      </section>
+        <section className='studio-main'>
+          <div className='workspace-toolbar'>
+            <div className='workspace-title-group'>
+              <h2 className='workspace-title'>Piano Roll Timeline</h2>
+              <p className='workspace-subtitle'>
+                black = confident, grey = uncertain. Click a block to hear that note.
+              </p>
+            </div>
+
+            <div className='workspace-actions'>
+              <span className='mini-pill'>{tempoBpm} BPM</span>
+              <span className='mini-pill'>{beatsPerBar}/4</span>
+              <span className='mini-pill'>
+                {isQuantized ? `Quantized (${stepsPerBeat}/beat)` : "Raw timing"}
+              </span>
+            </div>
+          </div>
+
+          <div className='workspace-panel'>
+            <PianoRoll
+              noteBlocks={displayedNoteBlocks}
+              tempoBpm={tempoBpm}
+              beatsPerBar={beatsPerBar}
+              onPlayNote={playSingleGeneratedNote}
+            />
+          </div>
+        </section>
+      </div>
+
+      {error && <p className='error'>{error}</p>}
     </main>
   )
 }
