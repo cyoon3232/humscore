@@ -510,7 +510,7 @@ function App() {
         <div className='studio-brand'>
           <h1>HumScore</h1>
           <p className='studio-tagline'>
-            Capture your humming. Clean it up.
+            Hum to make a song.
           </p>
         </div>
 
@@ -640,41 +640,6 @@ function App() {
             </div>
           </section>
 
-          <section className='panel sidebar-panel'>
-            <h2>Recording</h2>
-            <div className='button-row'>
-              {!isRecording ? (
-                <button onClick={startRecording} disabled={!isListening}>
-                  Start Recording
-                </button>
-              ) : (
-                <button className='danger-button' onClick={stopRecording}>
-                  Stop Recording
-                </button>
-              )}
-
-              <button
-                className="secondary-button"
-                onClick={playGeneratedNotesOnly}
-                disabled={displayedNoteBlocks.length === 0}
-              >
-                Play Notes Only
-              </button>
-
-              <button
-                className='secondary-button'
-                onClick={playVoiceAndGeneratedNotes}
-                disabled={!audioUrl || displayedNoteBlocks.length === 0}
-              >
-                Play Voice + Notes
-              </button>
-            </div>
-
-            {audioUrl && (
-              <audio ref={audioPlayerRef} src={audioUrl} controls className='audio' />
-            )}
-          </section>
-
           <RhythmControls
             tempoBpm={tempoBpm}
             beatsPerBar={beatsPerBar}
@@ -688,7 +653,43 @@ function App() {
         </aside>
 
         <section className='studio-main'>
+
           <div className='workspace-toolbar'>
+            <div className='transport-controls'>
+              {!isRecording ? (
+                <button 
+                  className='transport-button record-button'
+                  onClick={startRecording} disabled={!isListening}
+                >
+                  Record
+                </button>
+              ) : (
+                <button className='danger-button' onClick={stopRecording}>
+                  Stop
+                </button>
+              )}
+
+              <button
+                className="play-button"
+                onClick={playGeneratedNotesOnly}
+                disabled={displayedNoteBlocks.length === 0}
+              >
+                Play Notes Only
+              </button>
+
+              <button
+                className='play-button'
+                onClick={playVoiceAndGeneratedNotes}
+                disabled={!audioUrl || displayedNoteBlocks.length === 0}
+              >
+                Play Voice + Notes
+              </button>
+              
+              {audioUrl && (
+                <audio ref={audioPlayerRef} src={audioUrl} controls className='audio' />
+              )}
+            </div>
+
             <div className='workspace-title-group'>
               <h2 className='workspace-title'>Piano Roll Timeline</h2>
               <p className='workspace-subtitle'>

@@ -39,7 +39,7 @@ function RhythmControls({
   return (
     <section className="panel">
       <div className="section-heading">
-        <h2>4. Beat Grid</h2>
+        <h2>Beat Grid</h2>
         <p>Visual timing grid only. Quantizing comes next.</p>
       </div>
 
