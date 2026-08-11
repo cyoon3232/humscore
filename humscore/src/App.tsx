@@ -529,16 +529,6 @@ function App() {
           <section className='panel sidebar-panel'>
             <h2>Microphone</h2>
 
-            <div className='button-row'>
-              {!isListening ? (
-                <button onClick={startListening}>Start Listening</button>
-              ) : (
-                <button className='danger-button' onClick={stopListening}>
-                  Stop Listening
-                </button>
-              )}
-            </div>
-
             {livePitch ? (
               <div className='live-pitch'>
                 <p className='label'>Live detected note</p>
@@ -655,46 +645,60 @@ function App() {
         <section className='studio-main'>
 
           <div className='workspace-toolbar'>
-            <div className='transport-controls'>
-              {!isRecording ? (
-                <button 
-                  className='transport-button record-button'
-                  onClick={startRecording} disabled={!isListening}
-                >
-                  Record
-                </button>
-              ) : (
-                <button className='danger-button' onClick={stopRecording}>
-                  Stop
-                </button>
-              )}
-
-              <button
-                className="play-button"
-                onClick={playGeneratedNotesOnly}
-                disabled={displayedNoteBlocks.length === 0}
-              >
-                Play Notes Only
-              </button>
-
-              <button
-                className='play-button'
-                onClick={playVoiceAndGeneratedNotes}
-                disabled={!audioUrl || displayedNoteBlocks.length === 0}
-              >
-                Play Voice + Notes
-              </button>
-              
-              {audioUrl && (
-                <audio ref={audioPlayerRef} src={audioUrl} controls className='audio' />
-              )}
-            </div>
-
             <div className='workspace-title-group'>
               <h2 className='workspace-title'>Piano Roll Timeline</h2>
               <p className='workspace-subtitle'>
                 black = confident, grey = uncertain. Click a block to hear that note.
               </p>
+            </div>
+
+            <div className='transport-controls'>
+              {!isListening ? (
+                <button
+                  className='transport-button mic-button'
+                  onClick={startListening}
+                  title='Start listening'
+                >
+                  🎙
+                </button>
+              ) : (
+                <button
+                  className='transport-button mic-button active'
+                  onClick={stopListening}
+                  title='Stop listening'
+                >
+                  🎙
+                </button>
+              )}
+              
+              {!isRecording ? (
+                <button 
+                  className='transport-button record-button'
+                  onClick={startRecording} disabled={!isListening}
+                >
+                  ◉
+                </button>
+              ) : (
+                <button className='transport-button stop-button' onClick={stopRecording}>
+                  ■
+                </button>
+              )}
+
+              <button
+                className="transport-button play-button"
+                onClick={playGeneratedNotesOnly}
+                disabled={displayedNoteBlocks.length === 0}
+              >
+                ▶
+              </button>
+
+              <button
+                className='transport-text-button'
+                onClick={playVoiceAndGeneratedNotes}
+                disabled={!audioUrl || displayedNoteBlocks.length === 0}
+              >
+                Voice + Notes
+              </button>
             </div>
 
             <div className='workspace-actions'>
@@ -705,6 +709,10 @@ function App() {
               </span>
             </div>
           </div>
+          
+          {audioUrl && (
+            <audio ref={audioPlayerRef} src={audioUrl} controls className='audio' />
+          )}
 
           <div className='workspace-panel'>
             <PianoRoll

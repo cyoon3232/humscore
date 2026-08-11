@@ -162,7 +162,7 @@ button:disabled {
   transform: none;
 }
 
-.play-button {
+.secondary-button {
   background: var(--surface-3);
   border-color: var(--border);
 }
@@ -275,8 +275,31 @@ Workspace
   font-size: 18px;
 }
 
+.transport-text-button {
+  min-height: 42px;
+  border-radius: 999px;
+  padding: 0 16px;
+  background: var(--surface-3);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.mic-button {
+  background: var(--accent-2);
+}
+
+.mic-button.active {
+  border-color: rgba(0, 229, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.12);
+}
+
 .record-button {
   background: #ff5a5f;
+}
+
+.stop-button {
+  background: var(--surface-3);
+  border-color: var(--border);
 }
 
 .play-button {
@@ -461,6 +484,20 @@ Workspace
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .workspace-title-group,
+  .transport-controls,
+  .workspace-actions {
+    justify-self: stretch;
+  }
+
+  .transport-controls {
+    justify-content: center;
+  }
+
+  .workspace-actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 640px) {
@@ -489,11 +526,21 @@ Workspace
     font-size: 42px;
   }
 
-  button {
-    width: 100%;
-  }
-
   .button-row {
     flex-direction: column;
+  }
+
+  .transport-controls {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .transport-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  .transport-text-button {
+    width: auto;
   }
 }
