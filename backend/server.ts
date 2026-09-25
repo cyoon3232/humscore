@@ -8,7 +8,7 @@ app.use(cors({
   origin: 'http://localhost:5173',
 }))
 
-// initialize backend
+// initialize backend for HumScore
 app.use(express.json())
 
 app.get('/api/health', (req, res) => {
